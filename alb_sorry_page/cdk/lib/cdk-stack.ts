@@ -1,5 +1,7 @@
-import { Stack, StackProps } from 'aws-cdk-lib';
+import { Duration, Stack, StackProps } from 'aws-cdk-lib';
 import { Instance, InstanceClass, InstanceSize, InstanceType, InterfaceVpcEndpointAwsService, MachineImage, Peer, Port, SecurityGroup, SubnetType, Vpc } from 'aws-cdk-lib/aws-ec2';
+import { ApplicationLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import { InstanceIdTarget } from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
 import { Construct } from 'constructs';
 
 export class CdkStack extends Stack {
@@ -117,6 +119,30 @@ export class CdkStack extends Stack {
       instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MICRO),
       machineImage: MachineImage.latestAmazonLinux2023(),
       securityGroup: ec2Sg,
+    });
+
+    // インターネットに面したALBを作成
+    const alb = new ApplicationLoadBalancer(this, 'InternetFacingALB', {
+      vpc,
+      internetFacing: true,
+      securityGroup: albSg,
+    });
+    // EC2インスタンスをターゲットとしたターゲットグループを作成し、ALBにリスナーを追加
+    const listener = alb.addListener('Listener', {
+      port: 80,
+    });
+
+    listener.addTargets('WebFleet', {
+      port: 80,
+      targets: [
+        new InstanceIdTarget(ec2Instance.instanceId)
+      ],
+      healthCheck: {
+        path: '/',
+        unhealthyThresholdCount: 2,
+        healthyThresholdCount: 5,
+        interval: Duration.seconds(30),
+      }
     });
 
   }
