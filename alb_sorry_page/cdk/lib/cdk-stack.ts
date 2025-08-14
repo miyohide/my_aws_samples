@@ -1,5 +1,5 @@
 import { Duration, Stack, StackProps } from 'aws-cdk-lib';
-import { Instance, InstanceClass, InstanceSize, InstanceType, InterfaceVpcEndpointAwsService, MachineImage, Peer, Port, SecurityGroup, SubnetType, Vpc } from 'aws-cdk-lib/aws-ec2';
+import { Instance, InstanceClass, InstanceSize, InstanceType, InterfaceVpcEndpointAwsService, MachineImage, Peer, Port, SecurityGroup, SubnetType, UserData, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { ApplicationLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { InstanceIdTarget } from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
 import { Construct } from 'constructs';
@@ -110,6 +110,16 @@ export class CdkStack extends Stack {
       }]
     });
 
+    // Apache HTTPdをインストールする
+    const userData = UserData.forLinux();
+    userData.addCommands(
+      "dnf update -y",
+      "dnf install -y httpd",
+      "systemctl enable httpd",
+      "systemctl start httpd",
+      "echo '<html><body><h1>Hello from Amazon Linux 2023!</h1></body></html>' > /var/www/html/index.html"
+    );
+
     // EC2インスタンスを作成。OSはAmazon Linux 2023、インスタンスタイプはT3.micro
     const ec2Instance = new Instance(this, 'WebServer', {
       vpc,
@@ -119,6 +129,7 @@ export class CdkStack extends Stack {
       instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MICRO),
       machineImage: MachineImage.latestAmazonLinux2023(),
       securityGroup: ec2Sg,
+      userData: userData
     });
 
     // インターネットに面したALBを作成
