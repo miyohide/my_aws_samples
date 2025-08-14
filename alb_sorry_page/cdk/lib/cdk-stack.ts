@@ -151,7 +151,7 @@ export class CdkStack extends Stack {
       healthCheck: {
         path: '/',
         unhealthyThresholdCount: 2,
-        healthyThresholdCount: 5,
+        healthyThresholdCount: 2,
         interval: Duration.seconds(30),
       }
     });
