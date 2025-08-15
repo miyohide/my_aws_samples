@@ -2,6 +2,7 @@ import { Duration, Stack, StackProps } from 'aws-cdk-lib';
 import { Instance, InstanceClass, InstanceSize, InstanceType, InterfaceVpcEndpointAwsService, MachineImage, Peer, Port, SecurityGroup, SubnetType, UserData, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { ApplicationLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { InstanceIdTarget } from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
+import { ManagedPolicy, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 
 export class CdkStack extends Stack {
@@ -110,6 +111,14 @@ export class CdkStack extends Stack {
       }]
     });
 
+    // AmazonSSMManagedInstanceCoreを作成
+    const role = new Role(this, 'EC2SSMRole', {
+      assumedBy: new ServicePrincipal('ec2.amazonaws.com'),
+    });
+    role.addManagedPolicy(
+      ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore')
+    );
+
     // Apache HTTPdをインストールする
     const userData = UserData.forLinux();
     userData.addCommands(
@@ -129,7 +138,8 @@ export class CdkStack extends Stack {
       instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MICRO),
       machineImage: MachineImage.latestAmazonLinux2023(),
       securityGroup: ec2Sg,
-      userData: userData
+      userData: userData,
+      role: role
     });
 
     // インターネットに面したALBを作成
