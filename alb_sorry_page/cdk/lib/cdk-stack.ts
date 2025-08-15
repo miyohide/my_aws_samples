@@ -122,11 +122,10 @@ export class CdkStack extends Stack {
     // Apache HTTPdをインストールする
     const userData = UserData.forLinux();
     userData.addCommands(
-      "dnf update -y",
       "dnf install -y httpd",
+      "echo '<html><body><h1>Hello from Amazon Linux 2023!</h1></body></html>' > /var/www/html/index.html",
       "systemctl enable httpd",
-      "systemctl start httpd",
-      "echo '<html><body><h1>Hello from Amazon Linux 2023!</h1></body></html>' > /var/www/html/index.html"
+      "systemctl start httpd"
     );
 
     // EC2インスタンスを作成。OSはAmazon Linux 2023、インスタンスタイプはT3.micro
