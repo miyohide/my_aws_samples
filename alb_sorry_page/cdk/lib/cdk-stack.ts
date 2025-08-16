@@ -158,7 +158,7 @@ export class CdkStack extends Stack {
       runtime: Runtime.RUBY_3_4,
       handler: 'index.handler',
       role: lambdaRole,
-      code: Code.fromAsset(path.join(__dirname, '..', 'lambda', 'main.rb')),
+      code: Code.fromAsset(path.join(__dirname, '..', '..', 'lambda')),
       timeout: Duration.seconds(30),
       memorySize: 128
     });
