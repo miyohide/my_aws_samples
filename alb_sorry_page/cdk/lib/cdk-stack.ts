@@ -5,6 +5,7 @@ import { InstanceIdTarget, LambdaTarget } from 'aws-cdk-lib/aws-elasticloadbalan
 import { ManagedPolicy, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { Function, Code, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
+import path from 'path';
 
 export class CdkStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -157,11 +158,7 @@ export class CdkStack extends Stack {
       runtime: Runtime.RUBY_3_4,
       handler: 'index.handler',
       role: lambdaRole,
-      code: Code.fromInline(`
-        def handler(event:, context:)
-          { statusCode: 200, body: JSON.generate({ message: 'Hello from Ruby Lambda!' }) }
-        end
-      `),
+      code: Code.fromAsset(path.join(__dirname, '..', 'lambda', 'main.rb')),
       timeout: Duration.seconds(30),
       memorySize: 128
     });
