@@ -1,6 +1,6 @@
 import { Duration, Stack, StackProps } from 'aws-cdk-lib';
 import { Instance, InstanceClass, InstanceSize, InstanceType, InterfaceVpcEndpointAwsService, MachineImage, Peer, Port, SecurityGroup, SubnetType, UserData, Vpc } from 'aws-cdk-lib/aws-ec2';
-import { ApplicationLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import { ApplicationLoadBalancer, ApplicationProtocol, ApplicationTargetGroup, ListenerAction, ListenerCondition, TargetType } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { InstanceIdTarget } from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
 import { ManagedPolicy, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { Function, Code, Runtime } from 'aws-cdk-lib/aws-lambda';
@@ -172,22 +172,31 @@ export class CdkStack extends Stack {
       internetFacing: true,
       securityGroup: albSg,
     });
-    // EC2インスタンスをターゲットとしたターゲットグループを作成し、ALBにリスナーを追加
-    const listener = alb.addListener('Listener', {
-      port: 80,
-    });
 
-    listener.addTargets('WebFleet', {
+    // EC2向けターゲットグループを作成
+    const ec2TargetGroup = new ApplicationTargetGroup(this, 'MyEC2TargetGroup', {
+      vpc: vpc,
       port: 80,
-      targets: [
-        new InstanceIdTarget(ec2Instance.instanceId)
-      ],
+      protocol: ApplicationProtocol.HTTP,
+      targetType: TargetType.INSTANCE,
       healthCheck: {
         path: '/',
         unhealthyThresholdCount: 2,
         healthyThresholdCount: 2,
         interval: Duration.seconds(30),
-      }
+      },
+      targets: [new InstanceIdTarget(ec2Instance.instanceId)]
+    });
+
+    // EC2インスタンスをターゲットとしたターゲットグループを作成し、ALBにリスナーを追加
+    const listener = alb.addListener('Listener', {
+      port: 80,
+    });
+
+    listener.addAction('EC2Forward', {
+      priority: 1,
+      conditions: [ListenerCondition.pathPatterns(['/*'])],
+      action: ListenerAction.forward([ec2TargetGroup])
     });
 
   }
