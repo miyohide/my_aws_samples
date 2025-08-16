@@ -1,7 +1,7 @@
 import { Duration, Stack, StackProps } from 'aws-cdk-lib';
 import { Instance, InstanceClass, InstanceSize, InstanceType, InterfaceVpcEndpointAwsService, MachineImage, Peer, Port, SecurityGroup, SubnetType, UserData, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { ApplicationLoadBalancer, ApplicationProtocol, ApplicationTargetGroup, ListenerAction, ListenerCondition, TargetType } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
-import { InstanceIdTarget } from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
+import { InstanceIdTarget, LambdaTarget } from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
 import { ManagedPolicy, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { Function, Code, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
@@ -199,5 +199,16 @@ export class CdkStack extends Stack {
       action: ListenerAction.forward([ec2TargetGroup])
     });
 
+    // Lambda用TargetGroupを作成
+    const lambdaTargetGroup = new ApplicationTargetGroup(this, 'MyLambdaTargetGroup', {
+      targetType: TargetType.LAMBDA,
+      targets: [new LambdaTarget(lambdaFunction)]
+    });
+
+    listener.addAction('LambdaForward', {
+      priority: 2,
+      conditions: [ListenerCondition.pathPatterns(['/*'])],
+      action: ListenerAction.forward([lambdaTargetGroup])
+    });
   }
 }
