@@ -207,5 +207,12 @@ export class CdkStack extends Stack {
       conditions: [ListenerCondition.pathPatterns(['/*'])],
       action: ListenerAction.forward([lambdaTargetGroup])
     });
+
+    listener.addAction('DefaultFixedResponse', {
+      action: ListenerAction.fixedResponse(404, {
+        contentType: 'text/plain',
+        messageBody: 'Not Found',
+      }),
+    });
   }
 }
