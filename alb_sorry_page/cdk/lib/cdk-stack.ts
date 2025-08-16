@@ -3,6 +3,7 @@ import { Instance, InstanceClass, InstanceSize, InstanceType, InterfaceVpcEndpoi
 import { ApplicationLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { InstanceIdTarget } from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
 import { ManagedPolicy, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
+import { Function, Code, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 
 export class CdkStack extends Stack {
@@ -139,6 +140,30 @@ export class CdkStack extends Stack {
       securityGroup: ec2Sg,
       userData: userData,
       role: role
+    });
+
+    // Lambda関数用のIAMロールを作成
+    const lambdaRole = new Role(this, 'LambdaRole', {
+      assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
+    });
+
+    // Lambda関数の基本的な実行権限を付与
+    lambdaRole.addManagedPolicy(
+      ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')
+    );
+
+    // Rubyランタイムを使用したLambda関数を作成
+    const lambdaFunction = new Function(this, 'RubyFunction', {
+      runtime: Runtime.RUBY_3_4,
+      handler: 'index.handler',
+      role: lambdaRole,
+      code: Code.fromInline(`
+        def handler(event:, context:)
+          { statusCode: 200, body: JSON.generate({ message: 'Hello from Ruby Lambda!' }) }
+        end
+      `),
+      timeout: Duration.seconds(30),
+      memorySize: 128
     });
 
     // インターネットに面したALBを作成
