@@ -208,6 +208,7 @@ export class CdkStack extends Stack {
       action: ListenerAction.forward([lambdaTargetGroup])
     });
 
+    // デフォルトのアクションを設定。条件設定がないものは仕様上、必要。
     listener.addAction('DefaultFixedResponse', {
       action: ListenerAction.fixedResponse(404, {
         contentType: 'text/plain',
